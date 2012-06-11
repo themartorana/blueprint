@@ -1,8 +1,9 @@
-VERSION=3.4.1
 BUILD=1
 
 PYTHON=$(shell which python2.7 || which python27 || which python2.6 || which python26 || which python)
 PYTHON_VERSION=$(shell ${PYTHON} -c "from distutils.sysconfig import get_python_version; print(get_python_version())")
+
+VERSION=$(shell export PYTHONPATH=.:$PYTHONPATH; ${PYTHON} -c "import blueprint; print blueprint.__version__")
 
 prefix=/usr/local
 bindir=${prefix}/bin
@@ -24,7 +25,7 @@ clean:
 	rm -f bin/blueprint-template blueprint/frontend/mustache.sh
 	rm -rf \
 		*.deb \
-		setup.py build dist *.egg *.egg-info \
+		build dist *.egg *.egg-info \
 		man/man*/*.html
 	find . -name \*.pyc -delete
 
@@ -101,8 +102,7 @@ build-deb:
 		--edit
 	make uninstall prefix=/usr sysconfdir=/etc DESTDIR=debian
 
-build-pypi:
-	VERSION=$(VERSION) mustache.sh/bin/mustache.sh <setup.py.mustache >setup.py
+build-pypi: bin/blueprint-template
 	$(PYTHON) setup.py bdist_egg
 
 deploy: deploy-deb deploy-pypi

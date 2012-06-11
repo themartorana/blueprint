@@ -17,6 +17,8 @@ import util
 import walk
 
 
+__version__ = "3.4.1"
+
 DEFAULTS = {'io': {'max_content_length': 67108864,
                    'server': 'https://devstructure.com'},
             's3': {'region': 'US',

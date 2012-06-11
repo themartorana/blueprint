@@ -13,4 +13,3 @@ blueprint/frontend/mustache.sh
 build
 control
 dist
-setup.py

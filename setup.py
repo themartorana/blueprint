@@ -1,7 +1,8 @@
 from setuptools import setup, find_packages
+import blueprint
 
 setup(name='blueprint',
-      version='{{VERSION}}',
+      version=blueprint.__version__,
       description='reverse engineer server configuration',
       author='Richard Crowley',
       author_email='richard@devstructure.com',
