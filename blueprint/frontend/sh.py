@@ -10,6 +10,7 @@ import os.path
 import re
 from shutil import copyfile
 import tarfile
+from hashlib import md5
 
 from blueprint import git
 from blueprint import util
@@ -36,7 +37,7 @@ def sh(b, relaxed=False, server='https://devstructure.com', secret=None):
            service_package=service_package,
            service_source=service_source)
 
-    commit = git.rev_parse(b.name)
+    commit = None if b.name is None else git.rev_parse(b.name)
     tree = None if commit is None else git.tree(commit)
     def source(dirname, filename, gen_content, url):
         """
@@ -46,14 +47,15 @@ def sh(b, relaxed=False, server='https://devstructure.com', secret=None):
             s.add('MD5SUM="$(find "{0}" -printf %T@\\\\n | md5sum)"',
                   args=(dirname,))
         if url is not None:
+            tmp_filename = md5(url).hexdigest()
             s.add_list(('curl -o "{0}" "{1}"',),
                        ('wget -O "{0}" "{1}"',),
-                       args=(filename, url),
+                       args=(tmp_filename, url),
                        operator='||')
-            if '.zip' == pathname[-4:]:
-                s.add('unzip "{0}" -d "{1}"', args=(filename, dirname))
+            if '.zip' == filename[-4:]:
+                s.add('unzip "{0}" -d "{1}"', args=(tmp_filename, dirname))
             else:
-                s.add('mkdir -p "{1}" && tar xf "{0}" -C "{1}"', args=(filename, dirname))
+                s.add('mkdir -p "{1}" && tar xf "{0}" -C "{1}"', args=(tmp_filename, dirname))
         elif secret is not None:
             s.add_list(('curl -O "{0}/{1}/{2}/{3}"',),
                        ('wget "{0}/{1}/{2}/{3}"',),
@@ -111,12 +113,15 @@ def sh(b, relaxed=False, server='https://devstructure.com', secret=None):
                     else:
                         commands = ('cat',)
                     s.add(*commands, stdin=f['content'], stdout=pathname)
-            if 'root' != f['owner']:
-                s.add('chown {0} "{1}"', args=(f['owner'], pathname))
-            if 'root' != f['group']:
-                s.add('chgrp {0} "{1}"', args=(f['group'], pathname))
-            if '100644' != f['mode']:
-                s.add('chmod {0} "{1}"', args=(f['mode'][-4:], pathname))
+            owner = f.get('owner', f.get('user', 'root'))
+            if 'root' != owner:
+                s.add('chown {0} "{1}"', args=(owner, pathname))
+            group = f.get('group', 'root')
+            if 'root' != group:
+                s.add('chgrp {0} "{1}"', args=(group, pathname))
+            mode = f.get('mode', '100644')
+            if '100644' != mode:
+                s.add('chmod {0} "{1}"', args=(mode[-4:], pathname))
         for manager, service in lut['files'][pathname]:
             s.add('[ "$MD5SUM" != "$(md5sum "{0}")" ] && {1}=1',
                   args=(pathname, manager.env_var(service)))
@@ -282,7 +287,7 @@ class Script(object):
         """
         Generate a string containing shell code and all file contents.
         """
-        return ''.join(self.out)
+        return '\n'.join(self.out)
 
     def dumpf(self, gzip=False):
         """
