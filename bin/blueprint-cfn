@@ -29,12 +29,9 @@ if __name__ == '__main__':
     config_name = args[1]
 
     cf = boto.connect_cloudformation(options.aws_access_key_id, options.aws_secret_access_key)
-    stacks = cf.describe_stacks(stack_name_or_id=stack_name)
-    if 1 != len(stacks):
-        exit(2)
-    stack = stacks[0]
+    response = cf.describe_stack_resource(stack_name, config_name)
 
-    metadata = json.loads(stack.describe_resource(config_name)['DescribeStackResourceResponse']['DescribeStackResourceResult']['StackResourceDetail']['Metadata'])
+    metadata = json.loads(response['DescribeStackResourceResponse']['DescribeStackResourceResult']['StackResourceDetail']['Metadata'])
     as_json = json.dumps(metadata['AWS::CloudFormation::Init']['config'], indent=2)
     b = blueprint.Blueprint.loads(as_json)
     with context_managers.mkdtemp():
