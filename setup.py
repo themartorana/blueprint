@@ -26,7 +26,6 @@ setup(name='blueprint',
                'bin/blueprint-show-packages',
                'bin/blueprint-show-services',
                'bin/blueprint-show-sources',
-               'bin/blueprint-split',
-               'bin/blueprint-template'],
+               'bin/blueprint-split'],
       license='BSD',
       zip_safe=False)
