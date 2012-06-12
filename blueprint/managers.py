@@ -100,7 +100,11 @@ class PackageManager(unicode):
         if match is not None:
             return 'easy_install-{0} {1}'.format(match.group(1), package)
         if 'pip' == self or 'python-pip' == self:
-            arg = package if relaxed else '{0}=={1}'.format(package, version)
+            split = urlparse.urlsplit(version)
+            if split.scheme:
+                arg = version
+            else:
+                arg = package if relaxed else '{0}=={1}'.format(package, version)
             return 'pip install {0}'.format(arg)
 
         if 'php-pear' == self:
