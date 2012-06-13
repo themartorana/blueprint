@@ -1,0 +1,16 @@
+{
+  "packages": {
+    "apt": {
+      "python": [ "2.7" ]
+    },
+    "python": {
+      "Django": [
+        "1.4"
+      ],
+      "cssmin": [
+        "http://s3.amazonaws.com/pypi.stage.dmgctrl/packages/c/cssmin/cssmin-0.1.4.tar.gz"
+      ]
+    }
+  }
+}
+

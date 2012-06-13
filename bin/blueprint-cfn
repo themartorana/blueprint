@@ -40,6 +40,6 @@ if __name__ == '__main__':
     b = blueprint.Blueprint.loads(as_json)
     with context_managers.mkdtemp():
         filename = b.sh(options.relaxed).dumpf()
-        p = subprocess.Popen(['cat', filename], close_fds=True)
+        p = subprocess.Popen(['sh', filename], close_fds=True)
         p.communicate()
         sys.exit(p.returncode)
