@@ -78,7 +78,16 @@ def sh(b, relaxed=False, server='https://devstructure.com', secret=None):
         """
         if pathname in lut['files']:
             s.add('MD5SUM="$(md5sum "{0}" 2>/dev/null)"', args=(pathname,))
-        s.add('mkdir -p "{0}"', args=(os.path.dirname(pathname),))
+        if f['mode'].startswith('040'):
+            s.add('mkdir -p "{0}" -m {1}', args=(pathname, f['mode'][-4:],))
+            owner = f.get('owner', f.get('user', 'root'))
+            if 'root' != owner:
+                s.add('chown {0} "{1}"', args=(owner, pathname))
+            group = f.get('group', 'root')
+            if 'root' != group:
+                s.add('chgrp {0} "{1}"', args=(group, pathname))
+        else:
+            s.add('mkdir -p "{0}"', args=(os.path.dirname(pathname),))
         if '120000' == f['mode'] or '120777' == f['mode']:
             s.add('ln -fs "{0}" "{1}"', args=(f['content'], pathname))
         else:
