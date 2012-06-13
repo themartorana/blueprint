@@ -24,7 +24,8 @@ class PackageManager(unicode):
 
         if 'apt' == self:
             if relaxed:
-                return 'dpkg-query -W {0} >/dev/null'.format(package)
+                return ('[ \\\"$(dpkg-query -f\'${{{{Version}}}}\\n\' -W {0})\\\" '
+                        '!= \\\"\\\" ]').format(package)
             else:
                 return ('[ "$(dpkg-query -f\'${{{{Version}}}}\\n\' -W {0})" '
                         '= "{1}" ]').format(package, version)
