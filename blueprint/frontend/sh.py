@@ -80,7 +80,7 @@ def sh(b, relaxed=False, server='https://devstructure.com', secret=None):
             s.add('MD5SUM="$(md5sum "{0}" 2>/dev/null)"', args=(pathname,))
         s.add('mkdir -p "{0}"', args=(os.path.dirname(pathname),))
         if '120000' == f['mode'] or '120777' == f['mode']:
-            s.add('ln -s "{0}" "{1}"', args=(f['content'], pathname))
+            s.add('ln -fs "{0}" "{1}"', args=(f['content'], pathname))
         else:
             if 'source' in f:
                 s.add_list(('curl -o "{0}" "{1}"',),
