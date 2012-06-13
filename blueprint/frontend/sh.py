@@ -78,28 +78,32 @@ def sh(b, relaxed=False, server='https://devstructure.com', secret=None):
         """
         if pathname in lut['files']:
             s.add('MD5SUM="$(md5sum "{0}" 2>/dev/null)"', args=(pathname,))
-        if f['mode'].startswith('040'):
-            s.add('mkdir -p "{0}" -m {1}', args=(pathname, f['mode'][-4:],))
-            owner = f.get('owner', f.get('user', 'root'))
-            if 'root' != owner:
-                s.add('chown {0} "{1}"', args=(owner, pathname))
-            group = f.get('group', 'root')
-            if 'root' != group:
-                s.add('chgrp {0} "{1}"', args=(group, pathname))
+
+        source = f.get('source', None)
+        if source:
+            s.add_list(('curl -o "{0}" "{1}"',),
+                       ('wget -O "{0}" "{1}"',),
+                       args=(pathname, source),
+                       operator='||')
         else:
-            s.add('mkdir -p "{0}"', args=(os.path.dirname(pathname),))
-        if '120000' == f['mode'] or '120777' == f['mode']:
-            s.add('ln -fs "{0}" "{1}"', args=(f['content'], pathname))
-        else:
-            if 'source' in f:
-                s.add_list(('curl -o "{0}" "{1}"',),
-                           ('wget -O "{0}" "{1}"',),
-                           args=(pathname, f['source']),
-                           operator='||')
+            import stat
+            mode = int(f.get('mode', 100644), 8)
+
+            content = f.get('content', None)
+
+            if stat.S_ISDIR(mode):
+                s.add('mkdir -p "{0}"', args=(pathname,))
             else:
-                if 'template' in f:
+                s.add('mkdir -p "{0}"', args=(os.path.dirname(pathname),))
+
+            if stat.S_ISLNK(mode):
+                s.add('ln -fs "{0}" "{1}"', args=(content, pathname))
+            elif stat.S_ISREG(mode):
+                template = f.get('template', None)
+                encoding = f.get('encoding', None)
+                if template:
                     s.templates = True
-                    if 'base64' == f['encoding']:
+                    if 'base64' == encoding:
                         commands = ('base64 --decode', 'mustache')
                     else:
                         commands = ('mustache',)
@@ -112,25 +116,28 @@ def sh(b, relaxed=False, server='https://devstructure.com', secret=None):
                                (f.get('data', '').rstrip(),),
                                (command(*commands,
                                         escape_stdin=True,
-                                        stdin=f['template'],
+                                        stdin=template,
                                         stdout=pathname),),
                                operator='\n',
                                wrapper='()')
                 else:
-                    if 'base64' == f['encoding']:
+                    if 'base64' == encoding:
                         commands = ('base64 --decode',)
                     else:
                         commands = ('cat',)
-                    s.add(*commands, stdin=f['content'], stdout=pathname)
+                    s.add(*commands, stdin=content, stdout=pathname)
+
+            if 0644 != stat.S_IMODE(mode) and (stat.S_ISREG(mode) or stat.S_ISDIR(mode) or stat.S_ISFIFO(mode)):
+                s.add('chmod {0} "{1}"', args=('%o' % stat.S_IMODE(mode), pathname))
+
             owner = f.get('owner', f.get('user', 'root'))
             if 'root' != owner:
                 s.add('chown {0} "{1}"', args=(owner, pathname))
+
             group = f.get('group', 'root')
             if 'root' != group:
                 s.add('chgrp {0} "{1}"', args=(group, pathname))
-            mode = f.get('mode', '100644')
-            if '100644' != mode:
-                s.add('chmod {0} "{1}"', args=(mode[-4:], pathname))
+
         for manager, service in lut['files'][pathname]:
             s.add('[ "$MD5SUM" != "$(md5sum "{0}")" ] && {1}=1',
                   args=(pathname, manager.env_var(service)))
