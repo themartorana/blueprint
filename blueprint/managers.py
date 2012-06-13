@@ -4,6 +4,7 @@ resources.  They're mostly useful in the context of generated shell code.
 """
 
 import re
+import urlparse
 
 
 class PackageManager(unicode):

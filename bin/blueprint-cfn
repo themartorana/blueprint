@@ -20,6 +20,8 @@ if __name__ == '__main__':
     parser = optparse.OptionParser('usage: %prog [options] stack config')
     parser.add_option("-a", "--aws-access-key-id", dest="aws_access_key_id")
     parser.add_option("-k", "--aws-secret-access-key", dest="aws_secret_access_key")
+    parser.add_option("-v", "--verbose", default=False, action='store_true', dest="verbose")
+    parser.add_option('-r', '--relaxed', dest='relaxed', default=False, action='store_true', help='relax version constraints in generated code')
     (options, args) = parser.parse_args()
     if len(args) != 2 or (not options.aws_access_key_id or not options.aws_secret_access_key):
         parser.print_help()
@@ -33,9 +35,11 @@ if __name__ == '__main__':
 
     metadata = json.loads(response['DescribeStackResourceResponse']['DescribeStackResourceResult']['StackResourceDetail']['Metadata'])
     as_json = json.dumps(metadata['AWS::CloudFormation::Init']['config'], indent=2)
+    if options.verbose:
+        print as_json
     b = blueprint.Blueprint.loads(as_json)
     with context_managers.mkdtemp():
-        filename = b.sh().dumpf()
-        p = subprocess.Popen(['sh', filename], close_fds=True)
+        filename = b.sh(options.relaxed).dumpf()
+        p = subprocess.Popen(['cat', filename], close_fds=True)
         p.communicate()
         sys.exit(p.returncode)
